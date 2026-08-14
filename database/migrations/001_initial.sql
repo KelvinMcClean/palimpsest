@@ -12,6 +12,9 @@ CREATE TABLE books (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     hardcover_id BIGINT NOT NULL UNIQUE,
     title TEXT NOT NULL,
+    subtitle TEXT,
+    book_description TEXT,
+    slug TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
-	"github.com/KelvinMcClean/palimpsest/hardcover/tomlConfig"
 	"github.com/KelvinMcClean/palimpsest/hardcover/structs"
+	"github.com/KelvinMcClean/palimpsest/hardcover/tomlConfig"
 )
 
 type APIClient struct {
@@ -84,6 +85,8 @@ func (c *APIClient) GetToRead() []structs.Book {
 				ID:      book.ID,
 				Title:   book.Title,
 				Authors: authors,
+				Slug:    book.Slug,
+				Subtitle: book.Subtitle,
 			})
 		}
 	}
@@ -95,7 +98,7 @@ func (c *APIClient) GetFollowedAuthors(config tomlConfig.Config) ([]structs.Auth
 	offset := 0
 	minUsersCount := config.Hardcover.MinUsersCount
 	// We loop on the Books on the Author object, so we don't need to paginate the authors themselves, just the books for each author.
-	var totalBooks = 999999
+	var totalBooks = math.MaxInt64
 	var authors []structs.Author
 	for totalBooks >= limit {
 		var moreAuthors, moreOk = c.getFollowedAuthors(config, limit, offset, minUsersCount)
@@ -147,12 +150,15 @@ func (c *APIClient) getFollowedAuthors(config tomlConfig.Config, limit int, offs
 				var bookObj = structs.Book{
 					ID:    contribution.Book.ID,
 					Title: contribution.Book.Title,
+					Slug:  contribution.Book.Slug,
+					Subtitle: contribution.Book.Subtitle,
 				}
 				// Get the series name from the series matching the FeaturedBookSeriesID
 				for _, series := range contribution.Book.BookSeries {
 					if series.ID == contribution.Book.FeaturedBookSeriesID {
 						bookObj.Series.Name = series.Series.Name
 						bookObj.Series.Position = series.Position
+						bookObj.Series.ID = series.Series.ID
 						break
 					}
 				}

@@ -34,6 +34,8 @@ query GetFilterListWithAuthorBooks($id: Int!, $limit: Int!, $offset: Int!, $minU
                         title
                         literary_type_id
                         book_category_id
+                        slug
+                        subtitle
                         featured_book_series_id
                         activities_count
                         users_count
@@ -41,6 +43,7 @@ query GetFilterListWithAuthorBooks($id: Int!, $limit: Int!, $offset: Int!, $minU
                             id
                             position
                             series {
+                                id
                                 name
                             }
                         }

@@ -11,6 +11,8 @@ type DB struct {
 	conn *pgx.Conn
 }
 
+
+
 func Connect(ctx context.Context) (*DB, error) {
 	host := getenv("POSTGRES_HOST", "localhost")
 	port := getenv("POSTGRES_PORT", "5432")
@@ -42,6 +44,18 @@ func Connect(ctx context.Context) (*DB, error) {
 
 func (db *DB) Close(ctx context.Context) error {
 	return db.conn.Close(ctx)
+}
+
+func (db *DB) Info(ctx context.Context) (string, string, error) {
+	var databaseName string
+	var userName string
+
+	err := db.conn.QueryRow(
+		ctx,
+		"SELECT current_database(), current_user",
+	).Scan(&databaseName, &userName)
+
+	return databaseName, userName, err
 }
 
 func getenv(key, fallback string) string {

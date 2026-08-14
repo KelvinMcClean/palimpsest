@@ -6,6 +6,7 @@ type contributor struct {
 type author struct {
 	ID            int    `json:"id"`
 	Name          string `json:"name"`
+	
 	Contributions []struct {
 		Book hardcoverBook `json:"book"`
 	} `json:"contributions"`
@@ -15,6 +16,7 @@ type bookSeries struct {
 	ID       int     `json:"id"`
 	Position float64 `json:"position"`
 	Series   struct {
+		ID   int    `json:"id"`
 		Name string `json:"name"`
 	} `json:"series"`
 }
@@ -26,6 +28,8 @@ type hardcoverBook struct {
 	UsersCount           int           `json:"users_count"`
 	FeaturedBookSeriesID int           `json:"featured_book_series_id"`
 	BookSeries           []bookSeries  `json:"book_series"`
+	Slug                 string        `json:"slug"`
+	Subtitle             string        `json:"subtitle"`
 }
 
 type userBook struct {
