@@ -7,11 +7,11 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/KelvinMcClean/palimpsest/hardcover/tomlConfig"
+	"github.com/KelvinMcClean/palimpsest/hardcover/structs"
 )
 
 type APIClient struct {
@@ -50,7 +50,7 @@ func (c *APIClient) makeRequest(method string, body io.Reader) (*http.Response, 
 	return c.HTTPClient.Do(req)
 }
 
-func (c *APIClient) GetToRead() []Book {
+func (c *APIClient) GetToRead() []structs.Book {
 	query := toReadQuery
 
 	resp, err := c.makeRequest(http.MethodPost, strings.NewReader(fmt.Sprintf(`{"query": %q}`, query)))
@@ -72,7 +72,7 @@ func (c *APIClient) GetToRead() []Book {
 	}
 	log.Println("Response object: ", responseObj)
 
-	var books []Book
+	var books []structs.Book
 	for _, meItem := range responseObj.Data.Me {
 		for _, userBook := range meItem.UserBooks {
 			book := userBook.Book
@@ -80,7 +80,7 @@ func (c *APIClient) GetToRead() []Book {
 			for _, contributor := range book.Contributors {
 				authors = append(authors, contributor.Author.Name)
 			}
-			books = append(books, Book{
+			books = append(books, structs.Book{
 				ID:      book.ID,
 				Title:   book.Title,
 				Authors: authors,
@@ -90,20 +90,77 @@ func (c *APIClient) GetToRead() []Book {
 	return books
 }
 
-func (c *APIClient) GetFollowedAuthors(config tomlConfig.Config) {
+func (c *APIClient) GetFollowedAuthors(config tomlConfig.Config) ([]structs.Author, bool) {
+	limit := 10
+	offset := 0
+	minUsersCount := config.Hardcover.MinUsersCount
+	// We loop on the Books on the Author object, so we don't need to paginate the authors themselves, just the books for each author.
+	var totalBooks = 999999
+	var authors []structs.Author
+	for totalBooks >= limit {
+		var moreAuthors, moreOk = c.getFollowedAuthors(config, limit, offset, minUsersCount)
+		if !moreOk {
+			log.Fatal("Error getting followed authors")
+			return nil, false
+		}
+		offset += limit
+
+		authors = structs.MergeAuthors(authors, moreAuthors)
+		totalBooks = getTotalBooks(moreAuthors)
+	}
+
+	return authors, true
+}
+
+func getTotalBooks(authors []structs.Author) int {
+	var totalBooks = 0
+	for _, author := range authors {
+		totalBooks += len(author.Books)
+	}
+	return totalBooks
+}
+
+func (c *APIClient) getFollowedAuthors(config tomlConfig.Config, limit int, offset int, minUsersCount int) ([]structs.Author, bool) {
 	var query = authorQuery
-	query = strings.ReplaceAll(query, "--TOFOLLOWED_AUTHORS_LIST_ID--", strconv.Itoa(config.Hardcover.FollowedAuthorsListID)) // Replace with the actual list ID for followed authors
-	resp, err := c.makeRequest(http.MethodPost, strings.NewReader(fmt.Sprintf(`{"query": %q}`, query)))
+	resp, err := c.makeRequest(http.MethodPost, strings.NewReader(fmt.Sprintf(`{"query": %q, "variables": {"id": %d, "limit": %d, "offset": %d, "minUsersCount": %d}}`, query,
+		config.Hardcover.FollowedAuthorsListID, limit, offset, minUsersCount)))
 	if err != nil {
 		log.Fatal(err)
-		return
+		return nil, false
 	}
 	defer resp.Body.Close()
-	var responseObj map[string]interface{}
+	var responseObj authorResponse
 	err = json.NewDecoder(resp.Body).Decode(&responseObj)
 	if err != nil {
 		log.Fatal(err)
-		return
+		return nil, false
 	}
 	log.Println("Response object: ", responseObj)
+	var authors []structs.Author
+	for _, filterList := range responseObj.Data.FilterLists {
+		for _, entity := range filterList.FilterListEntities {
+			var authorObj = structs.Author{
+				ID:   entity.Author.ID,
+				Name: entity.Author.Name,
+			}
+			for _, contribution := range entity.Author.Contributions {
+				var bookObj = structs.Book{
+					ID:    contribution.Book.ID,
+					Title: contribution.Book.Title,
+				}
+				// Get the series name from the series matching the FeaturedBookSeriesID
+				for _, series := range contribution.Book.BookSeries {
+					if series.ID == contribution.Book.FeaturedBookSeriesID {
+						bookObj.Series.Name = series.Series.Name
+						bookObj.Series.Position = series.Position
+						break
+					}
+				}
+				authorObj.Books = append(authorObj.Books, bookObj)
+			}
+			authors = append(authors, authorObj)
+		}
+	}
+
+	return authors, true
 }

@@ -4,13 +4,28 @@ type contributor struct {
 	Author author `json:"author"`
 }
 type author struct {
-	Name string `json:"name"`
+	ID            int    `json:"id"`
+	Name          string `json:"name"`
+	Contributions []struct {
+		Book hardcoverBook `json:"book"`
+	} `json:"contributions"`
+}
+
+type bookSeries struct {
+	ID       int     `json:"id"`
+	Position float64 `json:"position"`
+	Series   struct {
+		Name string `json:"name"`
+	} `json:"series"`
 }
 
 type hardcoverBook struct {
-	ID           int           `json:"id"`
-	Title        string        `json:"title"`
-	Contributors []contributor `json:"contributions"`
+	ID                   int           `json:"id"`
+	Title                string        `json:"title"`
+	Contributors         []contributor `json:"contributions"`
+	UsersCount           int           `json:"users_count"`
+	FeaturedBookSeriesID int           `json:"featured_book_series_id"`
+	BookSeries           []bookSeries  `json:"book_series"`
 }
 
 type userBook struct {
@@ -25,8 +40,15 @@ type wantToReadResponse struct {
 	} `json:"data"`
 }
 
-type Book struct {
-	ID      int      `json:"id"`
-	Title   string   `json:"title"`
-	Authors []string `json:"authors"`
+type authorResponse struct {
+	Data struct {
+		FilterLists []struct {
+			AuthorsCount       int `json:"authors_count"`
+			FilterListEntities []struct {
+				Author author `json:"author"`
+			} `json:"filter_list_entities"`
+		} `json:"filter_lists"`
+	} `json:"data"`
 }
+
+

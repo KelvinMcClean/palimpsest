@@ -26,4 +26,5 @@ type Config struct {
 type Hardcover struct {
 	Key                   string
 	FollowedAuthorsListID int `toml:"list_id"`
+	MinUsersCount 		  int `toml:"min_users_count"`
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/KelvinMcClean/palimpsest/hardcover/api"
 	"github.com/KelvinMcClean/palimpsest/hardcover/tomlConfig"
+	"github.com/KelvinMcClean/palimpsest/hardcover/structs"
 )
 
 func main() {
@@ -15,5 +16,13 @@ func main() {
 		fmt.Println("Error creating API client:", err)
 		return
 	}
-	apiClient.GetFollowedAuthors(cfg)
+	authors, ok := apiClient.GetFollowedAuthors(cfg)
+	if !ok {
+		fmt.Println("Error getting followed authors")
+		return
+	}
+	fmt.Println("Followed authors:", authors)
+
+	books := structs.AuthorsToBooks(authors)
+	fmt.Println("Books:\n", books)
 }
