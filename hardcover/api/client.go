@@ -52,50 +52,89 @@ func (c *APIClient) makeRequest(method string, body io.Reader) (*http.Response, 
 	return c.HTTPClient.Do(req)
 }
 
-func (c *APIClient) GetToRead() []structs.Book {
+func (c *APIClient) GetToRead(config tomlConfig.Config) ([]structs.Book, bool) {
 	query := toReadQuery
 
-	resp, err := c.makeRequest(http.MethodPost, strings.NewReader(fmt.Sprintf(`{"query": %q}`, query)))
-	if err != nil {
-		log.Fatal(err)
-		return nil
-	}
-	log.Println("Response Status:", resp.Status)
-	defer resp.Body.Close()
-	var responseObj wantToReadResponse
-	err = json.NewDecoder(resp.Body).Decode(&responseObj)
-	if err != nil {
-		log.Fatal(err)
-		return nil
-	}
-	if len(responseObj.Data.Me) == 0 {
-		log.Fatal("No response from api")
-		return nil
-	}
-	log.Println("Response object: ", responseObj)
+	limit := 100
+	offset := 0
 
+	newBooks := true
 	var books []structs.Book
+
+	for newBooks {
+		resp, err := c.makeRequest(http.MethodPost, strings.NewReader(fmt.Sprintf(`{"query": %q, "variables": {"limit": %d, "offset": %d}}`,
+			query, limit, offset)))
+		if err != nil {
+			log.Fatal(err)
+			return nil, false
+		}
+		log.Println("Response Status:", resp.Status)
+		defer resp.Body.Close()
+		var responseObj wantToReadResponse
+		err = json.NewDecoder(resp.Body).Decode(&responseObj)
+		if err != nil {
+			log.Fatal(err)
+			return nil, false
+		}
+		if len(responseObj.Data.Me) == 0 {
+			return books, true
+		}
+		log.Println("Response object: ", responseObj)
+		books, newBooks = parseBooksFromWantToRead(responseObj, books)
+		offset += limit
+	}
+	return books, true
+
+}
+
+func parseBooksFromWantToRead(responseObj wantToReadResponse, books []structs.Book) ([]structs.Book, bool) {
 	for _, meItem := range responseObj.Data.Me {
+		if len(meItem.UserBooks) == 0 {
+			return books, false
+		}
 		for _, userBook := range meItem.UserBooks {
 			book := userBook.Book
-			var authors []string
+			var authors []structs.Author
 			for _, contributor := range book.Contributors {
-				authors = append(authors, contributor.Author.Name)
+				authors = append(authors, structs.Author{
+					Name: contributor.Author.Name,
+					ID:	  contributor.Author.ID})
 			}
-			books = append(books, structs.Book{
-				ID:       book.ID,
-				Title:    book.Title,
-				Authors:  authors,
-				Slug:     book.Slug,
-				Subtitle: book.Subtitle,
-			})
+			var bookObj = structs.Book{
+					ID:       book.ID,
+					Title:    book.Title,
+					Slug:     book.Slug,
+					Authors:  authors,
+					Subtitle: book.Subtitle,
+				}
+				// Get the series name from the series matching the FeaturedBookSeriesID
+				for _, series := range book.BookSeries {
+					if series.ID == book.FeaturedBookSeriesID {
+						bookObj.Series.Name = series.Series.Name
+						bookObj.Series.Position = series.Position
+						bookObj.Series.ID = series.Series.ID
+						break
+					}
+				}
+				for _, edition := range book.Editions {
+
+					if edition.ISBN10 != "" {
+						bookObj.Editions = append(bookObj.Editions, structs.Edition{Type: "ISBN10", Value: edition.ISBN10})
+
+					}
+					if edition.ISBN13 != "" {
+						bookObj.Editions = append(bookObj.Editions, structs.Edition{Type: "ISBN13", Value: edition.ISBN13})
+					}
+					bookObj.Editions = append(bookObj.Editions, structs.Edition{Type: "hardcover-id", Value: strconv.Itoa(edition.ID)})
+				}
+				books = append(books, bookObj)
 		}
 	}
-	return books
+	return books, true
 }
 
 func (c *APIClient) GetFollowedAuthors(config tomlConfig.Config) ([]structs.Author, bool) {
-	limit := 10
+	limit := 100
 	offset := 0
 	minUsersCount := config.Hardcover.MinUsersCount
 	// We loop on the Books on the Author object, so we don't need to paginate the authors themselves, just the books for each author.

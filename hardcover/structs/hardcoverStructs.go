@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 )
+
 func MergeAuthors(a []Author, b []Author) []Author {
 	authorMap := make(map[int]Author)
 	for _, author := range a {
@@ -31,17 +32,17 @@ type Author struct {
 }
 
 type Book struct {
-	ID      int      `json:"id"`
-	Title   string   `json:"title"`
-	Authors []string `json:"authors"`
-	Slug    string   `json:"slug"`
-	Subtitle string   `json:"subtitle"`
-	Series  BookSeries `json:"series"`
-	Editions []Edition `json:"editions"`
+	ID       int        `json:"id"`
+	Title    string     `json:"title"`
+	Authors  []Author   `json:"authors"`
+	Slug     string     `json:"slug"`
+	Subtitle string     `json:"subtitle"`
+	Series   BookSeries `json:"series"`
+	Editions []Edition  `json:"editions"`
 }
 
 type Edition struct {
-	Type string
+	Type  string
 	Value string
 }
 
@@ -51,17 +52,6 @@ type BookSeries struct {
 	Name     string  `json:"name"`
 }
 
-func AuthorsToBooks(authors []Author) []Book {
-	var books []Book
-	for _, author := range authors {
-		for _, book := range author.Books {
-			book.Authors = append(book.Authors, author.Name)
-			books = append(books, book)
-		}
-	}
-	return books
-}
-
 func (b Book) String() string {
 	seriesInfo := ""
 	editionInfo := ""
@@ -69,7 +59,7 @@ func (b Book) String() string {
 		formatPosition := strconv.FormatFloat(b.Series.Position, 'f', -1, 64)
 		seriesInfo = fmt.Sprintf(" - Series: %s (Position: %s) (ID: %d)", b.Series.Name, formatPosition, b.Series.ID)
 	}
-	if (len(b.Editions) > 0) {
+	if len(b.Editions) > 0 {
 		editionInfo = " - Editions: "
 		for _, edition := range b.Editions {
 			editionInfo += fmt.Sprintf("%s: %s; ", edition.Type, edition.Value)
@@ -81,8 +71,8 @@ func (b Book) String() string {
 func (a Author) String() string {
 	var result string
 	result += fmt.Sprintf("Author ID: %d, Name: %s\n", a.ID, a.Name)
-		for _, book := range a.Books {
-			result += book.String()
-		}
+	for _, book := range a.Books {
+		result += book.String()
+	}
 	return result
 }

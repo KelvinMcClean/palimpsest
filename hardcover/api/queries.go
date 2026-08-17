@@ -62,19 +62,44 @@ query GetFilterListWithAuthorBooks($id: Int!, $limit: Int!, $offset: Int!, $minU
 `
 
 const toReadQuery = `
-query {
-			me {
-				user_books(where: {status_id: {_eq: 1}}) {
-					book {
-						id
-						title
-                        contributions {
-							author {
-								name
-							}
-						}
-					}
-				}
-			}
-		}
+query WantToReadBooks($limit: Int!, $offset: Int!){
+   me {
+        user_books(
+            where: {status_id: {_eq: 1}}
+            limit: $limit
+            offset: $offset
+        ) {
+            book {
+                id
+                title
+                contributions {
+                    author {
+                        name
+                    }
+                } 
+                literary_type_id
+                book_category_id
+                slug
+                subtitle
+                featured_book_series_id
+                activities_count
+                users_count
+                book_series {
+                    id
+                    position
+                    series {
+                        id
+                        name
+                    }
+                }
+                editions {
+                    isbn_10
+                    isbn_13
+                    id
+                }
+            }
+        }
+    }
+}
+
 `

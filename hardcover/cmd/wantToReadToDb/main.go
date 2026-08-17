@@ -6,7 +6,6 @@ import (
 
 	"github.com/KelvinMcClean/palimpsest/database"
 	"github.com/KelvinMcClean/palimpsest/hardcover/api"
-	"github.com/KelvinMcClean/palimpsest/hardcover/structs"
 	"github.com/KelvinMcClean/palimpsest/hardcover/tomlConfig"
 )
 
@@ -33,17 +32,15 @@ func main() {
 		log.Fatalf("Error creating API client: %v", err)
 		return
 	}
-	authors, ok := apiClient.GetFollowedAuthors(cfg)
+	books, ok := apiClient.GetToRead(cfg)
 	if !ok {
-		log.Println("Error getting followed authors")
+		log.Println("Error getting want to read books")
 		return
 	}
-	log.Println("Followed authors:", authors)
+	log.Println("Want to read books:", books)
 
-	books := structs.AuthorsToBooks(authors)
-	log.Println("Books:\n", books)
-
-	if err := db.SaveAuthors(ctx, authors); err != nil {
+	
+	if err := db.SaveBooks(ctx, books); err != nil {
 		log.Fatal(err)
 	}
 

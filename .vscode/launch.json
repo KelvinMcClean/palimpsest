@@ -2,11 +2,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch hardcover test",
+            "name": "Get Author Books to DB",
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "hardcover/cmd/test"
+            "program": "hardcover/cmd/authorsToDb"
+        },
+        {
+            "name": "Get Want to Read to DB",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "hardcover/cmd/wantToReadToDb"
         },
         
 
