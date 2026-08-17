@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
 
@@ -20,7 +21,7 @@ func (db *DB) SaveAuthors(ctx context.Context, authors []structs.Author) error {
 		var authorID int64
 
 		err := tx.QueryRow(ctx, `
-			INSERT INTO authors (hardcover_id, name)
+			INSERT INTO hardcover.authors (hardcover_id, name)
 			VALUES ($1, $2)
 			ON CONFLICT (hardcover_id)
 			DO UPDATE SET
@@ -49,7 +50,7 @@ func (db *DB) SaveAuthors(ctx context.Context, authors []structs.Author) error {
 			}
 
 			if _, err := tx.Exec(ctx, `
-				INSERT INTO book_authors (book_id, author_id)
+				INSERT INTO hardcover.book_authors (book_id, author_id)
 				VALUES ($1, $2)
 				ON CONFLICT DO NOTHING
 			`, bookID, authorID); err != nil {
@@ -70,7 +71,7 @@ func (db *DB) SaveAuthors(ctx context.Context, authors []structs.Author) error {
 					)
 				}
 				_, err = tx.Exec(ctx, `
-					INSERT INTO book_series (book_id, series_id, position)
+					INSERT INTO hardcover.book_series (book_id, series_id, position)
 					VALUES ($1, $2, $3)
 					ON CONFLICT DO NOTHING
 				`, bookID, seriesID, book.Series.Position)
@@ -83,6 +84,36 @@ func (db *DB) SaveAuthors(ctx context.Context, authors []structs.Author) error {
 						err,
 					)
 				}
+			}
+			if book.Editions != nil {
+				for _, edition := range book.Editions {
+					_, err = tx.Exec(ctx, `
+						INSERT INTO hardcover.identifiers (book_id, type, value)
+						VALUES ($1, $2, $3)
+						ON CONFLICT DO NOTHING
+					`, bookID, edition.Type, edition.Value)
+					if err != nil {
+						return fmt.Errorf(
+							"saving edition %s for book %d: %w",
+							edition.Type,
+							book.ID,
+							err,
+						)
+					}
+				}
+			}
+			_, err = tx.Exec(ctx, `
+						INSERT INTO hardcover.identifiers (book_id, type, value)
+						VALUES ($1, $2, $3)
+						ON CONFLICT DO NOTHING
+					`, bookID, "hardcover-id", strconv.Itoa(book.ID),
+)
+			if err != nil {
+				return fmt.Errorf(
+					"saving hardcover-id for book %d: %w",
+					book.ID,
+					err,
+				)
 			}
 		}
 	}
@@ -97,7 +128,7 @@ func (db *DB) SaveAuthors(ctx context.Context, authors []structs.Author) error {
 func saveSeries(ctx context.Context, tx *pgx.Tx, series structs.BookSeries) (int64, error) {
 	var seriesID int64
 	err := (*tx).QueryRow(ctx, `
-		INSERT INTO series (hardcover_id, name)
+		INSERT INTO hardcover.series (hardcover_id, name)
 		VALUES ($1, $2)
 		ON CONFLICT (hardcover_id)
 		DO UPDATE SET
@@ -122,7 +153,7 @@ func saveBook(
 	var bookID int64
 
 	err := (*tx).QueryRow(ctx, `
-		INSERT INTO books (hardcover_id, title, slug, subtitle)
+		INSERT INTO hardcover.books (hardcover_id, title, slug, subtitle)
 		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (hardcover_id)
 		DO UPDATE SET

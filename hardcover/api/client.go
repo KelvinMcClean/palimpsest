@@ -8,6 +8,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -82,10 +83,10 @@ func (c *APIClient) GetToRead() []structs.Book {
 				authors = append(authors, contributor.Author.Name)
 			}
 			books = append(books, structs.Book{
-				ID:      book.ID,
-				Title:   book.Title,
-				Authors: authors,
-				Slug:    book.Slug,
+				ID:       book.ID,
+				Title:    book.Title,
+				Authors:  authors,
+				Slug:     book.Slug,
 				Subtitle: book.Subtitle,
 			})
 		}
@@ -148,9 +149,9 @@ func (c *APIClient) getFollowedAuthors(config tomlConfig.Config, limit int, offs
 			}
 			for _, contribution := range entity.Author.Contributions {
 				var bookObj = structs.Book{
-					ID:    contribution.Book.ID,
-					Title: contribution.Book.Title,
-					Slug:  contribution.Book.Slug,
+					ID:       contribution.Book.ID,
+					Title:    contribution.Book.Title,
+					Slug:     contribution.Book.Slug,
 					Subtitle: contribution.Book.Subtitle,
 				}
 				// Get the series name from the series matching the FeaturedBookSeriesID
@@ -162,6 +163,18 @@ func (c *APIClient) getFollowedAuthors(config tomlConfig.Config, limit int, offs
 						break
 					}
 				}
+				for _, edition := range contribution.Book.Editions {
+
+					if edition.ISBN10 != "" {
+						bookObj.Editions = append(bookObj.Editions, structs.Edition{Type: "ISBN10", Value: edition.ISBN10})
+
+					}
+					if edition.ISBN13 != "" {
+						bookObj.Editions = append(bookObj.Editions, structs.Edition{Type: "ISBN13", Value: edition.ISBN13})
+					}
+					bookObj.Editions = append(bookObj.Editions, structs.Edition{Type: "hardcover-id", Value: strconv.Itoa(edition.ID)})
+				}
+
 				authorObj.Books = append(authorObj.Books, bookObj)
 			}
 			authors = append(authors, authorObj)

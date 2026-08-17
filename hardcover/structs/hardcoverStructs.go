@@ -37,6 +37,12 @@ type Book struct {
 	Slug    string   `json:"slug"`
 	Subtitle string   `json:"subtitle"`
 	Series  BookSeries `json:"series"`
+	Editions []Edition `json:"editions"`
+}
+
+type Edition struct {
+	Type string
+	Value string
 }
 
 type BookSeries struct {
@@ -58,11 +64,18 @@ func AuthorsToBooks(authors []Author) []Book {
 
 func (b Book) String() string {
 	seriesInfo := ""
+	editionInfo := ""
 	if b.Series.Name != "" {
 		formatPosition := strconv.FormatFloat(b.Series.Position, 'f', -1, 64)
 		seriesInfo = fmt.Sprintf(" - Series: %s (Position: %s) (ID: %d)", b.Series.Name, formatPosition, b.Series.ID)
 	}
-	return fmt.Sprintf("  Book: %s (ID: %d)%s\n        %s\n", b.Title, b.ID, seriesInfo, b.Slug)
+	if (len(b.Editions) > 0) {
+		editionInfo = " - Editions: "
+		for _, edition := range b.Editions {
+			editionInfo += fmt.Sprintf("%s: %s; ", edition.Type, edition.Value)
+		}
+	}
+	return fmt.Sprintf("  Book: %s (ID: %d)%s%s\n        %s\n", b.Title, b.ID, seriesInfo, editionInfo, b.Slug)
 }
 
 func (a Author) String() string {

@@ -30,6 +30,13 @@ type hardcoverBook struct {
 	BookSeries           []bookSeries  `json:"book_series"`
 	Slug                 string        `json:"slug"`
 	Subtitle             string        `json:"subtitle"`
+	Editions			[]edition	   `json:"editions"`
+}
+
+type edition struct {
+	ISBN10 string `json:"isbn_10"`
+	ISBN13 string `json:"isbn_13"`
+	ID int `json:"id"`
 }
 
 type userBook struct {

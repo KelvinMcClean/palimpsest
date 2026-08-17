@@ -47,6 +47,11 @@ query GetFilterListWithAuthorBooks($id: Int!, $limit: Int!, $offset: Int!, $minU
                                 name
                             }
                         }
+                        editions {
+                            isbn_10
+                            isbn_13
+                            id
+                        }
                     }
                 }
             }
