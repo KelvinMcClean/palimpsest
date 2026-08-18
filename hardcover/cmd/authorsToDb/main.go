@@ -6,7 +6,6 @@ import (
 
 	"github.com/KelvinMcClean/palimpsest/database"
 	"github.com/KelvinMcClean/palimpsest/hardcover/api"
-	"github.com/KelvinMcClean/palimpsest/hardcover/structs"
 	"github.com/KelvinMcClean/palimpsest/hardcover/tomlConfig"
 )
 

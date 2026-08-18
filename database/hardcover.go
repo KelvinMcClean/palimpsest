@@ -11,20 +11,20 @@ import (
 	"github.com/KelvinMcClean/palimpsest/hardcover/structs"
 )
 
-func (db *DB) SaveBooks(ctx context.Context, books []structs.Book) error {
+func (db *DB) SaveHardcoverBooks(ctx context.Context, books []structs.Book) error {
 	tx, err := db.conn.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("starting transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
 	for _, book := range books {
-		bookID, err := saveBook(ctx, &tx, book)
+		bookID, err := saveHardcoverBook(ctx, &tx, book)
 		if err != nil {
 			log.Fatal("Couldn't insert book")
 			return err
 		}
 		for _, author := range book.Authors {
-			authorID, err := saveAuthor(ctx, tx, author)
+			authorID, err := saveHardcoverAuthor(ctx, tx, author)
 			if err != nil {
 				return err
 			}
@@ -35,14 +35,14 @@ func (db *DB) SaveBooks(ctx context.Context, books []structs.Book) error {
 			}
 
 			if book.Series.Name != "" {
-				err3 := saveAllSeries(ctx, tx, book, bookID)
+				err3 := saveAllHardcoverSeries(ctx, tx, book, bookID)
 				if err3 != nil {
 					return err3
 				}
 			}
-			err = saveIdentifiers(ctx, book, err, tx, bookID)
-			if err2 != nil {
-				return err2
+			err = saveHardcoverIdentifiers(ctx, book, err, tx, bookID)
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -54,7 +54,7 @@ func (db *DB) SaveBooks(ctx context.Context, books []structs.Book) error {
 	return nil
 }
 
-func (db *DB) SaveAuthors(ctx context.Context, authors []structs.Author) error {
+func (db *DB) SaveHardcoverAuthors(ctx context.Context, authors []structs.Author) error {
 	tx, err := db.conn.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("starting transaction: %w", err)
@@ -63,13 +63,13 @@ func (db *DB) SaveAuthors(ctx context.Context, authors []structs.Author) error {
 
 	for _, author := range authors {
 
-		authorID, err1 := saveAuthor(ctx, tx, author)
+		authorID, err1 := saveHardcoverAuthor(ctx, tx, author)
 		if err1 != nil {
 			return err1
 		}
 
 		for _, book := range author.Books {
-			bookID, err := saveBook(ctx, &tx, book)
+			bookID, err := saveHardcoverBook(ctx, &tx, book)
 			if err != nil {
 				return fmt.Errorf(
 					"saving book %d: %w",
@@ -84,12 +84,12 @@ func (db *DB) SaveAuthors(ctx context.Context, authors []structs.Author) error {
 			}
 
 			if book.Series.Name != "" {
-				err3 := saveAllSeries(ctx, tx, book, bookID)
+				err3 := saveAllHardcoverSeries(ctx, tx, book, bookID)
 				if err3 != nil {
 					return err3
 				}
 			}
-			err = saveIdentifiers(ctx, book, err, tx, bookID)
+			err = saveHardcoverIdentifiers(ctx, book, err, tx, bookID)
 			if err2 != nil {
 				return err2
 			}
@@ -104,7 +104,8 @@ func (db *DB) SaveAuthors(ctx context.Context, authors []structs.Author) error {
 	return nil
 }
 
-func saveIdentifiers(ctx context.Context, book structs.Book, err error, tx pgx.Tx, bookID int64) error {
+func saveHardcoverId
+entifiers(ctx context.Context, book structs.Book, err error, tx pgx.Tx, bookID int64) error {
 	if book.Editions != nil {
 		for _, edition := range book.Editions {
 			_, err = tx.Exec(ctx, `
@@ -131,8 +132,8 @@ func saveIdentifiers(ctx context.Context, book structs.Book, err error, tx pgx.T
 	return err
 }
 
-func saveAllSeries(ctx context.Context, tx pgx.Tx, book structs.Book, bookID int64) error {
-	seriesID, err := saveSeries(ctx, &tx, book.Series)
+func saveAllHardcoverSeries(ctx context.Context, tx pgx.Tx, book structs.Book, bookID int64) error {
+	seriesID, err := saveHardcoverSeries(ctx, &tx, book.Series)
 	if err != nil {
 		return fmt.Errorf(
 			"saving series %d: %w",
@@ -181,7 +182,7 @@ func linkBookAuthor(ctx context.Context, tx pgx.Tx, bookID int64, authorID int64
 	return nil
 }
 
-func saveSeries(ctx context.Context, tx *pgx.Tx, series structs.BookSeries) (int64, error) {
+func saveHardcoverSeries(ctx context.Context, tx *pgx.Tx, series structs.BookSeries) (int64, error) {
 	var seriesID int64
 	err := (*tx).QueryRow(ctx, `
 		INSERT INTO hardcover.series (hardcover_id, name)
@@ -201,7 +202,7 @@ func saveSeries(ctx context.Context, tx *pgx.Tx, series structs.BookSeries) (int
 	return seriesID, nil
 }
 
-func saveBook(
+func saveHardcoverBook(
 	ctx context.Context,
 	tx *pgx.Tx,
 	book structs.Book,
@@ -228,7 +229,7 @@ func saveBook(
 	return bookID, nil
 }
 
-func saveAuthor(ctx context.Context, tx pgx.Tx, author structs.Author) (int64, error) {
+func saveHardcoverAuthor(ctx context.Context, tx pgx.Tx, author structs.Author) (int64, error) {
 	var authorID int64
 
 	err := tx.QueryRow(ctx, `

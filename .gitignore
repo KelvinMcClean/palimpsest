@@ -32,3 +32,4 @@ go.work.sum
 # .vscode/
 **/__debug_bin.exe*
 hardcover/config.toml
+**/metadata.db*
