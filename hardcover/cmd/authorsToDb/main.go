@@ -39,7 +39,7 @@ func main() {
 	}
 	log.Println("Followed authors:", authors)
 
-	if err := db.SaveAuthors(ctx, authors); err != nil {
+	if err := db.SaveHardcoverAuthors(ctx, authors); err != nil {
 		log.Fatal(err)
 	}
 

@@ -1,4 +1,4 @@
-package database
+package hardcoverDb
 
 import (
 	"context"
@@ -7,12 +7,32 @@ import (
 	"strconv"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/KelvinMcClean/palimpsest/database"
 
 	"github.com/KelvinMcClean/palimpsest/hardcover/structs"
 )
+	
+type hDB struct {
+	db *database.DB
+}
 
-func (db *DB) SaveHardcoverBooks(ctx context.Context, books []structs.Book) error {
-	tx, err := db.conn.Begin(ctx)
+
+func Connect(ctx context.Context) (*hDB, error) {
+	hdb := &hDB{}
+	var err error
+	hdb.db, err = database.Connect(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("connecting to database: %w", err)
+	}
+	return hdb, nil
+}
+
+func (hdb *hDB) Close(ctx context.Context) error {
+	return hdb.db.Close(ctx)
+}
+
+func (hdb *hDB) SaveHardcoverBooks(ctx context.Context, books []structs.Book) error {
+	tx, err := hdb.db.Conn.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("starting transaction: %w", err)
 	}
@@ -54,8 +74,8 @@ func (db *DB) SaveHardcoverBooks(ctx context.Context, books []structs.Book) erro
 	return nil
 }
 
-func (db *DB) SaveHardcoverAuthors(ctx context.Context, authors []structs.Author) error {
-	tx, err := db.conn.Begin(ctx)
+func (hdb *hDB) SaveHardcoverAuthors(ctx context.Context, authors []structs.Author) error {
+	tx, err := hdb.db.Conn.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("starting transaction: %w", err)
 	}
@@ -90,8 +110,8 @@ func (db *DB) SaveHardcoverAuthors(ctx context.Context, authors []structs.Author
 				}
 			}
 			err = saveHardcoverIdentifiers(ctx, book, err, tx, bookID)
-			if err2 != nil {
-				return err2
+			if err != nil {
+				return err
 			}
 
 		}
@@ -104,8 +124,7 @@ func (db *DB) SaveHardcoverAuthors(ctx context.Context, authors []structs.Author
 	return nil
 }
 
-func saveHardcoverId
-entifiers(ctx context.Context, book structs.Book, err error, tx pgx.Tx, bookID int64) error {
+func saveHardcoverIdentifiers(ctx context.Context, book structs.Book, err error, tx pgx.Tx, bookID int64) error {
 	if book.Editions != nil {
 		for _, edition := range book.Editions {
 			_, err = tx.Exec(ctx, `

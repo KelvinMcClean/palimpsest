@@ -8,7 +8,7 @@ import (
 )
 
 type DB struct {
-	conn *pgx.Conn
+	Conn *pgx.Conn
 }
 
 
@@ -39,18 +39,18 @@ func Connect(ctx context.Context) (*DB, error) {
 		return nil, fmt.Errorf("pinging postgres: %w", err)
 	}
 
-	return &DB{conn: conn}, nil
+	return &DB{Conn: conn}, nil
 }
 
 func (db *DB) Close(ctx context.Context) error {
-	return db.conn.Close(ctx)
+	return db.Conn.Close(ctx)
 }
 
 func (db *DB) Info(ctx context.Context) (string, string, error) {
 	var databaseName string
 	var userName string
 
-	err := db.conn.QueryRow(
+	err := db.Conn.QueryRow(
 		ctx,
 		"SELECT current_database(), current_user",
 	).Scan(&databaseName, &userName)

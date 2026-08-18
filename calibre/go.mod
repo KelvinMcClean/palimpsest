@@ -4,14 +4,23 @@ go 1.26.5
 
 require modernc.org/sqlite v1.56.0
 
+require github.com/KelvinMcClean/palimpsest/database v0.0.0-20260818164340-972398717e40
+
 require (
+	github.com/KelvinMcClean/palimpsest/hardcover v0.0.0-20260814105229-be9ca5289805 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+	github.com/jackc/pgx/v5 v5.10.0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	modernc.org/libc v1.74.4 // indirect
+	golang.org/x/text v0.29.0 // indirect
+	modernc.org/libc v1.75.3 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
-	modernc.org/memory v1.11.0 // indirect
+	modernc.org/memory v1.12.0 // indirect
 )
+
+replace github.com/KelvinMcClean/palimpsest/database => ../database

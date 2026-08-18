@@ -56,7 +56,7 @@ func (db *DB) createMigrationTable(ctx context.Context) error {
 		)
 	`
 
-	_, err := db.conn.Exec(ctx, query)
+	_, err := db.Conn.Exec(ctx, query)
 	if err != nil {
 		return fmt.Errorf("creating schema_migrations table: %w", err)
 	}
@@ -75,7 +75,7 @@ func (db *DB) isMigrationApplied(ctx context.Context, name string) (bool, error)
 
 	var applied bool
 
-	if err := db.conn.QueryRow(ctx, query, name).Scan(&applied); err != nil {
+	if err := db.Conn.QueryRow(ctx, query, name).Scan(&applied); err != nil {
 		return false, fmt.Errorf(
 			"checking migration %s: %w",
 			name,
@@ -87,7 +87,7 @@ func (db *DB) isMigrationApplied(ctx context.Context, name string) (bool, error)
 }
 
 func (db *DB) runMigration(ctx context.Context, migration migration) error {
-	tx, err := db.conn.Begin(ctx)
+	tx, err := db.Conn.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf(
 			"starting transaction for migration %s: %w",

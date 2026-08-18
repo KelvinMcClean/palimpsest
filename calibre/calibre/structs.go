@@ -24,3 +24,20 @@ type Identifier struct {
 	Type   string
 	Value  string
 }
+
+type Series struct {
+	ID       int
+	Name     string
+	Sort     string
+}
+
+type BookAuthor struct {
+	BookID   int
+	AuthorID int
+}
+
+type BookSeries struct {
+	BookID   int
+	SeriesID int
+	Position int
+}
