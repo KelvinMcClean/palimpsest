@@ -53,17 +53,17 @@ func (hdb *hDB) SaveHardcoverBooks(ctx context.Context, books []structs.Book) er
 			if err2 != nil {
 				return err2
 			}
+		}
 
-			if book.Series.Name != "" {
-				err3 := saveAllHardcoverSeries(ctx, tx, book, bookID)
-				if err3 != nil {
-					return err3
-				}
+		if book.Series.Name != "" {
+			err3 := saveAllHardcoverSeries(ctx, tx, book, bookID)
+			if err3 != nil {
+				return err3
 			}
-			err = saveHardcoverIdentifiers(ctx, book, err, tx, bookID)
-			if err != nil {
-				return err
-			}
+		}
+		err = saveHardcoverIdentifiers(ctx, book, tx, bookID)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -109,7 +109,7 @@ func (hdb *hDB) SaveHardcoverAuthors(ctx context.Context, authors []structs.Auth
 					return err3
 				}
 			}
-			err = saveHardcoverIdentifiers(ctx, book, err, tx, bookID)
+			err = saveHardcoverIdentifiers(ctx, book, tx, bookID)
 			if err != nil {
 				return err
 			}
@@ -124,10 +124,10 @@ func (hdb *hDB) SaveHardcoverAuthors(ctx context.Context, authors []structs.Auth
 	return nil
 }
 
-func saveHardcoverIdentifiers(ctx context.Context, book structs.Book, err error, tx pgx.Tx, bookID int64) error {
+func saveHardcoverIdentifiers(ctx context.Context, book structs.Book,  tx pgx.Tx, bookID int64) error {
 	if book.Editions != nil {
 		for _, edition := range book.Editions {
-			_, err = tx.Exec(ctx, `
+			_, err := tx.Exec(ctx, `
 						INSERT INTO hardcover.identifiers (book_id, type, value)
 						VALUES ($1, $2, $3)
 						ON CONFLICT DO NOTHING
@@ -142,7 +142,7 @@ func saveHardcoverIdentifiers(ctx context.Context, book structs.Book, err error,
 			}
 		}
 	}
-	_, err = tx.Exec(ctx, `
+	_, err := tx.Exec(ctx, `
 						INSERT INTO hardcover.identifiers (book_id, type, value)
 						VALUES ($1, $2, $3)
 						ON CONFLICT DO NOTHING
@@ -160,15 +160,15 @@ func saveAllHardcoverSeries(ctx context.Context, tx pgx.Tx, book structs.Book, b
 			err,
 		)
 	}
-	err3 := linkBookSeries(ctx, err, tx, bookID, seriesID, book)
+	err3 := linkBookSeries(ctx, tx, bookID, seriesID, book)
 	if err3 != nil {
 		return err3
 	}
 	return nil
 }
 
-func linkBookSeries(ctx context.Context, err error, tx pgx.Tx, bookID int64, seriesID int64, book structs.Book) error {
-	_, err = tx.Exec(ctx, `
+func linkBookSeries(ctx context.Context, tx pgx.Tx, bookID int64, seriesID int64, book structs.Book) error {
+	_, err := tx.Exec(ctx, `
 					INSERT INTO hardcover.book_series (book_id, series_id, position)
 					VALUES ($1, $2, $3)
 					ON CONFLICT DO NOTHING
