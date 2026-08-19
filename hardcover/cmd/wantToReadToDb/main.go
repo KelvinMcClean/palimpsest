@@ -20,10 +20,10 @@ func main() {
 	}
 	defer db.Close(ctx)
 	log.Println("Connected to database")
-	if err != nil {
-		log.Println("Error getting database info:", err)
-		return
-	}
+	// if err != nil {
+	// 	log.Println("Error getting database info:", err)
+	// 	return
+	// }
 
 	apiClient, err := api.NewAPIClient("https://api.hardcover.app/v1/graphql", cfg)
 	if err != nil {

@@ -27,81 +27,55 @@ func (cdb *cDB) Close(ctx context.Context) error {
 	return cdb.db.Close(ctx)
 }
 
-func (cdb *cDB) saveCalibreBooks(ctx context.Context, books []calibre.Book) error {
-	tx, err := cdb.db.Conn.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("starting transaction: %w", err)
-	}
-	defer tx.Rollback(ctx)
-	rows := make([][]any, 0, len(books))
-
+func (cdb *cDB) saveCalibreBooks(tx pgx.Tx, ctx context.Context, books []calibre.Book) error {
 	for _, book := range books {
-		rows = append(rows, []any{
+		_, err := tx.Exec(
+			ctx,
+			`INSERT INTO calibre.books (calibre_id, title, path)
+	 			VALUES ($1, $2, $3)
+				ON CONFLICT DO NOTHING`,
 			book.CalibreID,
 			book.Title,
 			book.Path,
-		})
-	}
-
-	_, err = tx.CopyFrom(
-		ctx,
-		pgx.Identifier{"calibre.books"},
-		[]string{"calibre_id", "title", "path"},
-		pgx.CopyFromRows(rows),
-	)
-	if err != nil {
-		return fmt.Errorf("inserting books: %w", err)
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("committing transaction: %w", err)
+		)
+		if err != nil {
+			return fmt.Errorf("inserting books: %w", err)
+		}
 	}
 	return nil
 }
 
-func (cdb *cDB) saveCalibreAuthors(ctx context.Context, authors []calibre.Author) error {
-	tx, err := cdb.db.Conn.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("starting transaction: %w", err)
-	}
-	defer tx.Rollback(ctx)
-	rows := make([][]any, 0, len(authors))
+func (cdb *cDB) saveCalibreAuthors(tx pgx.Tx, ctx context.Context, authors []calibre.Author) error {
+	
 
 	for _, author := range authors {
-		rows = append(rows, []any{
+		_, err := tx.Exec(
+			ctx,
+			`INSERT INTO calibre.authors (calibre_id, name, sort)
+	 			VALUES ($1, $2, $3)
+				ON CONFLICT DO NOTHING`,
 			author.ID,
 			author.Name,
 			author.Sort,
-		})
+		)
+		if err != nil {
+			return fmt.Errorf("inserting authors: %w", err)
+		}
 	}
 
-	_, err = tx.CopyFrom(
-		ctx,
-		pgx.Identifier{"calibre.authors"},
-		[]string{"calibre_id", "name", "sort"},
-		pgx.CopyFromRows(rows),
-	)
-	if err != nil {
-		return fmt.Errorf("inserting authors: %w", err)
-	}
-	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("committing transaction: %w", err)
-	}
 	return nil
 }
 
-func (cdb *cDB) saveCalibreFormats(ctx context.Context, formats []calibre.Format) error {
-	tx, err := cdb.db.Conn.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("starting transaction: %w", err)
-	}
-	defer tx.Rollback(ctx)
+func (cdb *cDB) saveCalibreFormats(tx pgx.Tx, ctx context.Context, formats []calibre.Format) error {
+	
 	for _, format := range formats {
-		_, err = tx.Exec(
+		_, err := tx.Exec(
 			ctx,
 			`INSERT INTO calibre.formats (book_id, format, name, size)
      			SELECT id, $2, $3, $4
      			FROM calibre.books
-     			WHERE calibre_id = $1`,
+     			WHERE calibre_id = $1
+				ON CONFLICT DO NOTHING`,
 			format.BookID,
 			format.Format,
 			format.Name,
@@ -111,25 +85,18 @@ func (cdb *cDB) saveCalibreFormats(ctx context.Context, formats []calibre.Format
 			return fmt.Errorf("inserting formats: %w", err)
 		}
 	}
-	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("committing transaction: %w", err)
-	}
 	return nil
 }
 
-func (cdb *cDB) saveCalibreIdentifiers(ctx context.Context, identifiers []calibre.Identifier) error {
-	tx, err := cdb.db.Conn.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("starting transaction: %w", err)
-	}
-	defer tx.Rollback(ctx)
+func (cdb *cDB) saveCalibreIdentifiers(tx pgx.Tx, ctx context.Context, identifiers []calibre.Identifier) error {
 	for _, identifier := range identifiers {
-		_, err = tx.Exec(
+		_, err := tx.Exec(
 			ctx,
 			`INSERT INTO calibre.identifiers (book_id, type, value)
      			SELECT id, $2, $3
      			FROM calibre.books
-     			WHERE calibre_id = $1`,
+     			WHERE calibre_id = $1
+				ON CONFLICT DO NOTHING`,
 			identifier.BookID,
 			identifier.Type,
 			identifier.Value,
@@ -138,26 +105,24 @@ func (cdb *cDB) saveCalibreIdentifiers(ctx context.Context, identifiers []calibr
 			return fmt.Errorf("inserting identifiers: %w", err)
 		}
 	}
-	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("committing transaction: %w", err)
-	}
 	return nil
 }
 
-func (cdb *cDB) saveCalibreBookAuthors(ctx context.Context, bookAuthors []calibre.BookAuthor) error {
-	tx, err := cdb.db.Conn.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("starting transaction: %w", err)
-	}
-	defer tx.Rollback(ctx)
+func (cdb *cDB) saveCalibreBookAuthors(tx pgx.Tx, ctx context.Context, bookAuthors []calibre.BookAuthor) error {
+	// tx, err := cdb.db.Conn.Begin(ctx)
+	// if err != nil {
+	// 	return fmt.Errorf("starting transaction: %w", err)
+	// }
+	// defer tx.Rollback(ctx)
 	for _, bookAuthor := range bookAuthors {
-		_, err = tx.Exec(
+		_, err := tx.Exec(
 			ctx,
 			`INSERT INTO calibre.book_authors (book_id, author_id)
      			SELECT b.id, a.id
      			FROM calibre.books b
      			JOIN calibre.authors a ON a.calibre_id = $2
-     			WHERE b.calibre_id = $1`,
+     			WHERE b.calibre_id = $1
+				ON CONFLICT DO NOTHING`,
 			bookAuthor.BookID,
 			bookAuthor.AuthorID,
 		)
@@ -165,26 +130,45 @@ func (cdb *cDB) saveCalibreBookAuthors(ctx context.Context, bookAuthors []calibr
 			return fmt.Errorf("inserting book authors: %w", err)
 		}
 	}
-	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("committing transaction: %w", err)
-	}
+	// if err := tx.Commit(ctx); err != nil {
+	// 	return fmt.Errorf("committing transaction: %w", err)
+	// }
 	return nil
 }
 
-func (cdb *cDB) saveCalibreBookSeries(ctx context.Context, bookSeries []calibre.BookSeries) error {
-	tx, err := cdb.db.Conn.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("starting transaction: %w", err)
-	}
-	defer tx.Rollback(ctx)
-	for _, bs := range bookSeries {
-		_, err = tx.Exec(
+
+func (cdb *cDB) saveCalibreSeries(tx pgx.Tx, ctx context.Context, series []calibre.Series) error {
+	for _, s := range series {
+		_, err := tx.Exec(
 			ctx,
-			`INSERT INTO calibre.book_series (book_id, series_id, position)
+			`INSERT INTO calibre.series (calibre_id, name, sort)
+	 			VALUES ($1, $2, $3)
+				ON CONFLICT DO NOTHING`,
+				s.ID,
+				s.Name,
+				s.Sort,
+		)
+		if err != nil {
+			return fmt.Errorf("inserting series: %w", err)
+		}
+	}
+	// if err := tx.Commit(ctx); err != nil {
+	// 	return fmt.Errorf("committing transaction: %w", err)
+	// }
+	return nil
+}
+
+
+func (cdb *cDB) saveCalibreBookSeries(tx pgx.Tx, ctx context.Context, bookSeries []calibre.BookSeries) error {
+	for _, bs := range bookSeries {
+		_, err := tx.Exec(
+			ctx,
+			`INSERT INTO calibre.book_series (book_id, series_id, index)
 	 			SELECT b.id, s.id, $3
 	 			FROM calibre.books b
 	 			JOIN calibre.series s ON s.calibre_id = $2
-	 			WHERE b.calibre_id = $1`,
+	 			WHERE b.calibre_id = $1
+				ON CONFLICT DO NOTHING`,
 			bs.BookID,
 			bs.SeriesID,
 			bs.Position,
@@ -193,31 +177,68 @@ func (cdb *cDB) saveCalibreBookSeries(ctx context.Context, bookSeries []calibre.
 			return fmt.Errorf("inserting book series: %w", err)
 		}
 	}
-	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("committing transaction: %w", err)
-	}
+	// if err := tx.Commit(ctx); err != nil {
+	// 	return fmt.Errorf("committing transaction: %w", err)
+	// }
 	return nil
 }
 
-func (cdb *cDB) SaveCalibreData(ctx context.Context, books []calibre.Book, authors []calibre.Author, formats []calibre.Format, identifiers []calibre.Identifier, bookAuthors []calibre.BookAuthor, bookSeries []calibre.BookSeries) error {
+func (cdb *cDB) TruncateCalibreTables(ctx context.Context) error {
+	tx, err := cdb.db.Conn.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("starting transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
 
-	if err := cdb.saveCalibreBooks(ctx, books); err != nil {
+	tables := []string{
+		"calibre.book_series",
+		"calibre.book_authors",
+		"calibre.identifiers",
+		"calibre.formats",
+		"calibre.books",
+		"calibre.authors",
+		"calibre.series",
+	}
+	for _, table := range tables {
+		_, err := tx.Exec(ctx, fmt.Sprintf("TRUNCATE TABLE %s CASCADE", table))
+		if err != nil {
+			return fmt.Errorf("truncating table %s: %w", table, err)
+		}
+	}
+	return tx.Commit(ctx)
+}
+
+func (cdb *cDB) SaveCalibreData(ctx context.Context, books []calibre.Book, authors []calibre.Author, formats []calibre.Format, identifiers []calibre.Identifier, bookAuthors []calibre.BookAuthor, bookSeries []calibre.BookSeries, series []calibre.Series	) error {
+
+	tx, err := cdb.db.Conn.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("starting transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	if err := cdb.saveCalibreBooks(tx, ctx, books); err != nil {
 		return fmt.Errorf("saving books: %w", err)
 	}
-	if err := cdb.saveCalibreAuthors(ctx, authors); err != nil {
+	if err := cdb.saveCalibreAuthors(tx, ctx, authors); err != nil {
 		return fmt.Errorf("saving authors: %w", err)
 	}
-	if err := cdb.saveCalibreFormats(ctx, formats); err != nil {
+	if err := cdb.saveCalibreFormats(tx, ctx, formats); err != nil {
 		return fmt.Errorf("saving formats: %w", err)
 	}
-	if err := cdb.saveCalibreIdentifiers(ctx, identifiers); err != nil {
+	if err := cdb.saveCalibreIdentifiers(tx, ctx, identifiers); err != nil {
 		return fmt.Errorf("saving identifiers: %w", err)
 	}
-	if err := cdb.saveCalibreBookAuthors(ctx, bookAuthors); err != nil {
+	if err := cdb.saveCalibreBookAuthors(tx, ctx, bookAuthors); err != nil {
 		return fmt.Errorf("saving book authors: %w", err)
 	}
-	if err := cdb.saveCalibreBookSeries(ctx, bookSeries); err != nil {
+	if err := cdb.saveCalibreSeries(tx, ctx, series); err != nil {
+		return fmt.Errorf("saving series: %w", err)
+	}
+	if err := cdb.saveCalibreBookSeries(tx, ctx, bookSeries); err != nil {
 		return fmt.Errorf("saving book series: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("committing transaction: %w", err)
 	}
 	return nil
 }

@@ -42,7 +42,7 @@ func main() {
 		panic(err)
 	}
 	defer databaseConn.Close(ctx)
-	err = databaseConn.SaveCalibreData(ctx, books, authors, formats, identifiers, bookAuthors, bookSeries)
+	err = databaseConn.SaveCalibreData(ctx, books, authors, formats, identifiers, bookAuthors, bookSeries, series)
 	if err != nil {
 		panic(err)
 	}
