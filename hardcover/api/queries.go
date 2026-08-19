@@ -74,6 +74,7 @@ query WantToReadBooks($limit: Int!, $offset: Int!){
                 title
                 contributions {
                     author {
+                        id
                         name
                     }
                 } 
