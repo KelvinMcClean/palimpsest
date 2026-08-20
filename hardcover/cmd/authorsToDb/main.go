@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/KelvinMcClean/palimpsest/database/hardcoverDb"
@@ -39,7 +40,9 @@ func main() {
 	}
 	log.Println("Followed authors:", authors)
 
-	if err := db.SaveHardcoverAuthors(ctx, authors); err != nil {
+	route := fmt.Sprintf("Followed Authors List (%d)", cfg.Hardcover.FollowedAuthorsListID)
+
+	if err := db.SaveHardcoverAuthors(ctx, authors, route); err != nil {
 		log.Fatal(err)
 	}
 

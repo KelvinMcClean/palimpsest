@@ -37,7 +37,9 @@ func main() {
 	}
 	log.Println("Want to read books:", books)
 	
-	if err := db.SaveHardcoverBooks(ctx, books); err != nil {
+	route := "Want to Read List for Me"
+
+	if err := db.SaveHardcoverBooks(ctx, books, route); err != nil {
 		log.Fatal(err)
 	}
 

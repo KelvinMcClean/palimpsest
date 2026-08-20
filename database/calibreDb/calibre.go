@@ -46,7 +46,6 @@ func (cdb *cDB) saveCalibreBooks(tx pgx.Tx, ctx context.Context, books []calibre
 }
 
 func (cdb *cDB) saveCalibreAuthors(tx pgx.Tx, ctx context.Context, authors []calibre.Author) error {
-	
 
 	for _, author := range authors {
 		_, err := tx.Exec(
@@ -67,7 +66,7 @@ func (cdb *cDB) saveCalibreAuthors(tx pgx.Tx, ctx context.Context, authors []cal
 }
 
 func (cdb *cDB) saveCalibreFormats(tx pgx.Tx, ctx context.Context, formats []calibre.Format) error {
-	
+
 	for _, format := range formats {
 		_, err := tx.Exec(
 			ctx,
@@ -136,7 +135,6 @@ func (cdb *cDB) saveCalibreBookAuthors(tx pgx.Tx, ctx context.Context, bookAutho
 	return nil
 }
 
-
 func (cdb *cDB) saveCalibreSeries(tx pgx.Tx, ctx context.Context, series []calibre.Series) error {
 	for _, s := range series {
 		_, err := tx.Exec(
@@ -144,9 +142,9 @@ func (cdb *cDB) saveCalibreSeries(tx pgx.Tx, ctx context.Context, series []calib
 			`INSERT INTO calibre.series (calibre_id, name, sort)
 	 			VALUES ($1, $2, $3)
 				ON CONFLICT DO NOTHING`,
-				s.ID,
-				s.Name,
-				s.Sort,
+			s.ID,
+			s.Name,
+			s.Sort,
 		)
 		if err != nil {
 			return fmt.Errorf("inserting series: %w", err)
@@ -157,7 +155,6 @@ func (cdb *cDB) saveCalibreSeries(tx pgx.Tx, ctx context.Context, series []calib
 	// }
 	return nil
 }
-
 
 func (cdb *cDB) saveCalibreBookSeries(tx pgx.Tx, ctx context.Context, bookSeries []calibre.BookSeries) error {
 	for _, bs := range bookSeries {
@@ -208,7 +205,7 @@ func (cdb *cDB) TruncateCalibreTables(ctx context.Context) error {
 	return tx.Commit(ctx)
 }
 
-func (cdb *cDB) SaveCalibreData(ctx context.Context, books []calibre.Book, authors []calibre.Author, formats []calibre.Format, identifiers []calibre.Identifier, bookAuthors []calibre.BookAuthor, bookSeries []calibre.BookSeries, series []calibre.Series	) error {
+func (cdb *cDB) SaveCalibreData(ctx context.Context, books []calibre.Book, authors []calibre.Author, formats []calibre.Format, identifiers []calibre.Identifier, bookAuthors []calibre.BookAuthor, bookSeries []calibre.BookSeries, series []calibre.Series) error {
 
 	tx, err := cdb.db.Conn.Begin(ctx)
 	if err != nil {
@@ -237,8 +234,84 @@ func (cdb *cDB) SaveCalibreData(ctx context.Context, books []calibre.Book, autho
 	if err := cdb.saveCalibreBookSeries(tx, ctx, bookSeries); err != nil {
 		return fmt.Errorf("saving book series: %w", err)
 	}
+	if _, err := cdb.InsertCalibreNormalizedBooks(ctx, tx); err != nil {
+		return fmt.Errorf("inserting normalized books: %w", err)
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("committing transaction: %w", err)
 	}
+	
 	return nil
+}
+
+func (cdb *cDB) InsertCalibreNormalizedBooks(ctx context.Context, tx pgx.Tx) ([]calibre.NormalizedBook, error) {
+
+	rows, err := tx.Query(ctx, `
+		SELECT
+    b.id,
+    b.title,
+    COALESCE(array_agg(DISTINCT a.name) FILTER (WHERE a.name IS NOT NULL), '{}') AS authors,
+    COALESCE(array_agg(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL), '{}') AS series
+	FROM calibre.books b
+	LEFT JOIN calibre.book_authors ba ON b.id = ba.book_id
+	LEFT JOIN calibre.authors a ON ba.author_id = a.id
+	LEFT JOIN calibre.book_series bs ON b.id = bs.book_id
+	LEFT JOIN calibre.series s ON bs.series_id = s.id
+	GROUP BY b.id, b.title
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("querying normalized books: %w", err)
+	}
+	defer rows.Close()
+
+	var normalizedBooks []calibre.NormalizedBook
+	for rows.Next() {
+		var nb calibre.NormalizedBook
+		if err := rows.Scan(
+			&nb.ID,
+			&nb.Title,
+			&nb.Authors,
+			&nb.Series,
+		); err != nil {
+			return nil, fmt.Errorf("scanning normalized book: %w", err)
+		}
+		nb = nb.Normalize()
+
+		normalizedBooks = append(normalizedBooks, nb)
+	}
+
+	normalizedBooks = calibre.JoinNormalizedBooks(normalizedBooks)
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating over normalized books: %w", err)
+	}
+
+	for _, book := range normalizedBooks {
+		_, err := tx.Exec(
+			ctx,
+			`INSERT INTO calibre.search_books (id, title, normalized_title, normalized_title_base, authors, normalized_authors, series, normalized_series)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+				ON CONFLICT (id) DO UPDATE SET
+					title = EXCLUDED.title,
+					normalized_title = EXCLUDED.normalized_title,
+					normalized_title_base = EXCLUDED.normalized_title_base,
+					authors = EXCLUDED.authors,
+					normalized_authors = EXCLUDED.normalized_authors,
+					series = EXCLUDED.series,
+					normalized_series = EXCLUDED.normalized_series`,
+			book.ID,
+			book.Title,
+			book.NormalizedTitle,
+			book.NormalizedTitleBase,
+			book.Authors,
+			book.NormalizedAuthors,
+			book.Series,
+			book.NormalizedSeries,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("inserting normalized book: %w", err)
+		}
+	}
+
+	return normalizedBooks, nil
 }

@@ -191,6 +191,7 @@ func (c *APIClient) getFollowedAuthors(config tomlConfig.Config, limit int, offs
 					ID:       contribution.Book.ID,
 					Title:    contribution.Book.Title,
 					Slug:     contribution.Book.Slug,
+					Authors:  []structs.Author{authorObj},
 					Subtitle: contribution.Book.Subtitle,
 				}
 				// Get the series name from the series matching the FeaturedBookSeriesID

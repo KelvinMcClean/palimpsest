@@ -1,3 +1,5 @@
+github.com/KelvinMcClean/palimpsest v0.0.0-20260819173055-9b1ff8ce5eb1 h1:gN6clnGs6W3iB0LrJQl8/KASN9I+ZpOF3XLd13AMeN0=
+github.com/KelvinMcClean/palimpsest v0.0.0-20260819173055-9b1ff8ce5eb1/go.mod h1:28up/TCS6XeME1SWB754tKl3Yz8SeJnmDoOtrAWe5uc=
 github.com/KelvinMcClean/palimpsest/hardcover v0.0.0-20260814105229-be9ca5289805 h1:N6XasPx3crxtdpPMrQtEYVNqYU/zt4+76DNzwtaC65M=
 github.com/KelvinMcClean/palimpsest/hardcover v0.0.0-20260814105229-be9ca5289805/go.mod h1:BZlnPVGUedCHpVrZL5Dj1PcMhAOHHiNnhk6J9m89ero=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

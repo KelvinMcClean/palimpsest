@@ -1,0 +1,9 @@
+CREATE TABLE app.matching (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    calibre_id BIGINT NOT NULL UNIQUE REFERENCES calibre.books(id) ON DELETE CASCADE,
+    hardcover_id BIGINT NOT NULL UNIQUE REFERENCES hardcover.books(id) ON DELETE CASCADE,
+    confidence NUMERIC(5, 2) NOT NULL,
+    match_method TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

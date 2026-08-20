@@ -7,6 +7,7 @@ require modernc.org/sqlite v1.56.0
 require github.com/KelvinMcClean/palimpsest/database v0.0.0-20260818164340-972398717e40
 
 require (
+	github.com/KelvinMcClean/palimpsest v0.0.0-20260819173055-9b1ff8ce5eb1 // indirect
 	github.com/KelvinMcClean/palimpsest/hardcover v0.0.0-20260814105229-be9ca5289805 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -24,3 +25,4 @@ require (
 )
 
 replace github.com/KelvinMcClean/palimpsest/database => ../database
+replace github.com/KelvinMcClean/palimpsest => ..

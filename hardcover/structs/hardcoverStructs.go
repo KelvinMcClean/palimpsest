@@ -3,6 +3,8 @@ package structs
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/KelvinMcClean/palimpsest/normalize"
 )
 
 func MergeAuthors(a []Author, b []Author) []Author {
@@ -50,6 +52,46 @@ type BookSeries struct {
 	ID       int     `json:"id"`
 	Position float64 `json:"position"`
 	Name     string  `json:"name"`
+}
+
+type NormalizedBook struct {
+	ID                     int
+	Title                  string
+	NormalizedTitle        string
+	NormalizedTitleBase    string
+	Authors                []string
+	NormalizedAuthors      []string
+	Series                 []string
+	NormalizedSeries       []string
+	Subtitle               string
+	NormalizedSubtitle     string
+	NormalizedSubtitleBase string
+}
+
+func (b Book) Normalize() NormalizedBook {
+	var normalizedBook NormalizedBook
+	normalizedBook.ID = b.ID
+	normalizedBook.Title = b.Title
+	normalizedBook.NormalizedTitle = normalize.Normalize(b.Title)
+	normalizedBook.NormalizedTitleBase = normalize.NormalizeBase(b.Title)
+	normalizedBook.Subtitle = b.Subtitle
+	normalizedBook.NormalizedSubtitle = normalize.Normalize(b.Subtitle)
+	normalizedBook.NormalizedSubtitleBase = normalize.NormalizeBase(b.Subtitle)
+	var authors []string
+	var normalizedAuthors []string
+	for _, author := range b.Authors {
+		authors = append(authors, author.Name)
+		normalizedAuthors = append(normalizedAuthors, normalize.NormalizeAuthorName(author.Name))
+	}
+	normalizedBook.Authors = authors
+	normalizedBook.NormalizedAuthors = normalizedAuthors
+	var series []string
+	var normalizedSeries []string
+	series = append(series, b.Series.Name)
+	normalizedSeries = append(normalizedSeries, normalize.Normalize(b.Series.Name))
+	normalizedBook.Series = series
+	normalizedBook.NormalizedSeries = normalizedSeries
+	return normalizedBook
 }
 
 func (b Book) String() string {
